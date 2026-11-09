@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>micro:bit & MakeCode 실습 자동 채점 시스템</title>
+<style>
+:root{
+  --bg:#f4f7fb;--card:#fff;--ink:#1d2433;--sub:#5b6577;--line:#e1e7f0;
+  --primary:#2f6fed;--primary-d:#1f56c4;--ok:#1f9d63;--warn:#e8890c;--bad:#d64545;
+  --teal:#0fa3a3;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+header{background:linear-gradient(120deg,#1f3fa8,#2f6fed 55%,#0fa3a3);color:#fff;padding:22px 20px}
+.wrap{max-width:none;width:100%;margin:0 auto;padding:0 20px}
+header .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.35rem}
+.status{margin-left:auto;font-size:.85rem;background:rgba(255,255,255,.18);padding:4px 12px;border-radius:99px}
+.status.on{background:rgba(31,157,99,.9)}
+.led{display:grid;grid-template-columns:repeat(5,10px);gap:3px;padding:8px;background:#0d1526;border-radius:8px}
+.led i{width:10px;height:10px;border-radius:50%;background:#2a3550;display:block}
+.led i.on{background:#ff4d4d;box-shadow:0 0 6px #ff4d4d}
+.brand small{display:block;opacity:.85;font-size:.75rem}
+.badges{display:flex;flex-wrap:wrap;gap:6px;max-width:620px}
+.badge{width:30px;height:30px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.95);background:#e5484d;color:#fff;font-size:.78rem;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,transform .15s}
+.badge:hover{background:#e5484d;transform:scale(1.1)}
+.badge.done{background:#1fb26b}
+.badge.done:hover{background:#1fb26b}
+.badge.cur{box-shadow:0 0 0 3px rgba(255,255,255,.55)}
+main{padding:24px 0 60px}
+h2{font-size:1.15rem;margin:0 0 6px}
+h3{font-size:1rem;margin:0 0 6px}
+.muted{color:var(--sub);font-size:.88rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(20,40,80,.05)}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:start}
+.top{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,2fr);align-items:stretch;margin-bottom:16px}
+.top .card{margin-bottom:0}
+@media(max-width:980px){.top{grid-template-columns:1fr}}
+.grid>div{min-width:0}
+.grid>div:last-child{position:sticky;top:12px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}.grid>div:last-child{position:static}}
+.progress{height:12px;background:#e7edf7;border-radius:99px;overflow:hidden;margin:8px 0}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--teal));transition:width .4s}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat{background:#f1f5fc;border-radius:10px;padding:10px;text-align:center;font-size:.82rem;color:var(--sub)}
+.stat b{display:block;font-size:1.4rem;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.btn{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;border-radius:9px;cursor:pointer}
+button:hover{background:#f1f5fc}
+button.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
+button.primary:hover{background:var(--primary-d)}
+button.danger{color:var(--bad);border-color:#f0c6c6}
+button:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;font-size:.85rem;font-weight:600;margin:8px 0 4px}
+input[type=text],input[type=password],textarea{width:100%;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+textarea{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;min-height:220px;resize:vertical}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.85rem}
+.chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.chip.done{border-color:var(--ok)}
+.chip.done::after{content:" ✔";color:var(--ok)}
+.chip.active.done::after{color:#fff}
+.level{font-size:.72rem;padding:2px 8px;border-radius:99px;background:#e8f0ff;color:var(--primary);margin-left:6px}
+.mission{background:#fff9ec;border:1px solid #f3e0b0;border-radius:12px;padding:14px}
+.mission h3{color:#9a6200}
+.mission ol{margin:6px 0 0 18px;padding:0}
+.checks{list-style:none;margin:10px 0 0;padding:0}
+.checks li{padding:6px 10px;border-radius:8px;margin-bottom:5px;background:#f6f8fc;font-size:.88rem}
+.checks li.pass{background:#e6f6ee;color:#146c43}
+.checks li.fail{background:#fdeaea;color:#9f2d2d}
+.result{margin-top:10px;padding:12px;border-radius:10px;font-weight:600;display:none}
+.result.pass{display:block;background:#e6f6ee;color:#146c43}
+.result.fail{display:block;background:#fdeaea;color:#9f2d2d}
+.sim{width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.note{font-size:.8rem;color:var(--sub);margin-top:8px}
+.teacher{border:1px dashed #b9c6e0;background:#f8faff}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{background:#f1f5fc}
+.tag-ok{color:var(--ok);font-weight:700}.tag-bad{color:var(--bad);font-weight:700}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="led" id="led" aria-hidden="true"></div>
+    <div class="brand">
+      <h1>micro:bit & MakeCode 실습 자동 채점 시스템</h1>
+      <small>LED 5×5 · micro:bit · MakeCode</small>
+    </div>
+    <div class="badges" id="badges" aria-label="문항별 통과 현황"></div>
+    <span class="status" id="status">MakeCode 연결 중...</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 상단: 학생 정보 + 진행 현황 -->
+  <div class="top">
+  <section class="card">
+    <h3>학생 정보</h3>
+    <p class="muted">학번과 이름은 자동 저장됩니다.</p>
+    <label for="stuId">학번</label>
+    <input type="text" id="stuId" placeholder="예) 10101" autocomplete="off">
+    <label for="stuName">이름</label>
+    <input type="text" id="stuName" placeholder="이름" autocomplete="off">
+    <div class="row" style="margin-top:12px">
+      <button id="btnAllCsv">평가 코드 입력 전체 결과 CSV</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>실습 진행 현황</h2>
+    <p class="muted">기초부터 중급까지 문항을 선택해 실습하고, 제출 결과와 완성도를 한눈에 확인하세요.</p>
+    <div class="row" style="justify-content:space-between"><span>전체 진행률</span><b id="pct">0%</b></div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="stats">
+      <div class="stat">전체 문항<b id="sTotal">0</b></div>
+      <div class="stat">완성 문항<b id="sDone">0</b></div>
+      <div class="stat">총 제출<b id="sSubmit">0</b></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="btnEval">✎ 평가 모드 · CSV 검증 <span class="muted">교사 전용 (비밀번호 필요)</span></button>
+      <button id="btnResetAll" class="danger">↻ 전체 새로 시작 <span class="muted">모든 문항의 진행 상태 초기화</span></button>
+    </div>
+  </section>
+  </div>
+
+  <!-- 교사용 평가 모드 -->
+  <section class="card teacher hidden" id="evalPanel">
+    <h2>평가 모드 · CSV 검증</h2>
+    <p class="muted">학생이 내려받은 "전체 결과 CSV" 파일을 불러오면 위·변조 여부(검증 코드)와 문항별 결과를 확인합니다.</p>
+    <input type="file" id="csvFile" accept=".csv,text/csv">
+    <div id="evalOut"></div>
+  </section>
+
+  <div class="grid">
+    <!-- 좌: 학생 정보 + 문항 -->
+    <div>
+      <section class="card">
+        <div class="chips" id="chips"></div>
+        <div class="row" style="gap:18px;margin-bottom:10px">
+          <div class="stat" style="flex:1">이 문항 제출 횟수<b id="qTry">0회</b><span>제출할 때마다 누적돼요.</span></div>
+          <div class="stat" style="flex:1">완성까지<b id="qFirst">아직 미완성</b><span>처음 통과한 제출 횟수를 기록해요.</span></div>
+        </div>
+        <div class="mission">
+          <h3>🎯 오늘의 미션 <span class="level" id="qLevel"></span></h3>
+          <p id="qTitle" style="font-weight:700;margin:4px 0"></p>
+          <p id="qDesc" class="muted" style="margin:0 0 8px"></p>
+          <b>성취기준</b>
+          <p id="qStd" class="muted" style="margin:2px 0 8px"></p>
+          <b>성취 기대</b>
+          <p id="qExp" class="muted" style="margin:2px 0 8px"></p>
+          <b>해결 순서</b>
+          <ol id="qSteps"></ol>
+        </div>
+        <div class="row" style="margin-top:12px;justify-content:space-between">
+          <button id="btnPrev">◀ 이전 문항</button>
+          <button id="btnNext">다음 문항 ▶</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 우: 편집기 + 채점 -->
+    <div>
+      <section class="card">
+        <iframe id="editor" class="sim" title="MakeCode 편집기"
+          src="https://makecode.microbit.org/?controller=1&lang=ko"
+          allow="usb; autoplay; camera; microphone" loading="lazy"></iframe>
+        <div class="row" style="margin-top:12px">
+          <button id="btnSubmit" class="primary">✔ 제출하고 자동 채점</button>
+          <button id="btnResetQ">이 문항 새로 시작</button>
+          <button id="btnExit">나가기</button>
+        </div>
+        <p class="note">* 블록의 위치가 아니라, 필요한 블록이 코드에 모두 들어 있는지 검사합니다.</p>
+        <div class="result" id="result"></div>
+        <ul class="checks" id="checks"></ul>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:0">코드 직접 붙여넣기</h3>
+          <span class="row">
+            <button id="btnReload">편집기 새로고침</button>
+            <button id="btnQCsv">문항 CSV</button>
+          </span>
+        </div>
+        <p class="note">MakeCode 편집기 상단의 <b>JavaScript</b> 탭에서 코드를 전부 복사해 아래에 붙여넣은 뒤 <b>제출하고 자동 채점</b>을 누르세요. (이 칸에 내용이 있으면 이 코드로 채점합니다)</p>
+        <textarea id="pasteBox" spellcheck="false" placeholder="여기에 JavaScript 코드를 붙여넣으세요"></textarea>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============ 설정 ============ */
+const TEACHER_PASSWORD = "1234";          // ← 교사용 비밀번호를 바꿔 쓰세요
+const SALT = "namsung-microbit-2026";     // CSV 검증 코드용 값
+const STORE = "mb_grader_v1";
+
+/* ============ 문항 (필요한 코드 조각을 정규식으로 검사) ============ */
+const QUESTIONS = [
+  { id:"Q1", level:"기초", title:"하트 아이콘 보여주기",
+    desc:"시작하면 micro:bit LED에 하트 모양이 나타나게 하세요.",
+    std:"[9정02-01] 문제 해결 순서를 알고리즘으로 표현한다.",
+    exp:"기본 출력 블록을 사용해 LED를 제어할 수 있다.",
+    steps:["‘기본’ 블록 중 ‘시작하면’ 확인","‘아이콘 출력’ 블록을 가져오기","하트 모양 선택"],
+    checks:[
+      {label:"아이콘 출력 블록 사용", re:/basic\.showIcon\(/},
+      {label:"하트 아이콘 선택", re:/IconNames\.Heart/}
+    ]},
+  { id:"Q2", level:"기초", title:"A 버튼으로 문자 보여주기",
+    desc:"A 버튼을 누르면 ‘HI’ 문자열이 흐르며 나타나게 하세요.",
+    std:"[9정02-02] 입력에 따라 동작하는 프로그램을 만든다.",
+    exp:"버튼 이벤트 블록을 사용할 수 있다.",
+    steps:["‘입력’ 블록에서 ‘A 버튼을 눌렀을 때’ 가져오기","‘문자열 출력’ 블록 넣기","‘HI’ 입력"],
+    checks:[
+      {label:"A 버튼 이벤트 사용", re:/input\.onButtonPressed\(\s*Button\.A/},
+      {label:"문자열 출력 블록 사용", re:/basic\.showString\(/},
+      {label:"문자열 ‘HI’ 사용", re:/showString\(\s*["']HI["']/i}
+    ]},
+  { id:"Q3", level:"기초", title:"A·B 버튼으로 다른 아이콘",
+    desc:"A 버튼은 웃는 얼굴, B 버튼은 슬픈 얼굴을 보여주세요.",
+    std:"[9정02-03] 선택 구조를 이해하고 활용한다.",
+    exp:"버튼별로 다른 동작을 지정할 수 있다.",
+    steps:["A 버튼 이벤트 만들기","B 버튼 이벤트 만들기","각각 다른 아이콘 출력"],
+    checks:[
+      {label:"A 버튼 이벤트 사용", re:/Button\.A\b/},
+      {label:"B 버튼 이벤트 사용", re:/Button\.B\b/},
+      {label:"웃는 얼굴 아이콘", re:/IconNames\.Happy/},
+      {label:"슬픈 얼굴 아이콘", re:/IconNames\.Sad/}
+    ]},
+  { id:"Q4", level:"기초", title:"흔들면 주사위",
+    desc:"micro:bit을 흔들면 1~6 사이의 무작위 수를 보여주세요.",
+    std:"[9정02-04] 변수와 연산을 이용해 문제를 해결한다.",
+    exp:"난수 블록과 흔들기 이벤트를 사용할 수 있다.",
+    steps:["‘흔들었을 때’ 이벤트 가져오기","‘무작위 수’ 블록 사용","범위를 1~6으로 설정","숫자 출력"],
+    checks:[
+      {label:"흔들기 이벤트 사용", re:/input\.onGesture\(\s*Gesture\.Shake/},
+      {label:"무작위 수 사용", re:/randint\(/},
+      {label:"숫자 출력 블록 사용", re:/basic\.showNumber\(/}
+    ]},
+  { id:"Q5", level:"중급", title:"변수로 점수 세기",
+    desc:"A 버튼을 누를 때마다 점수 변수가 1씩 늘고, B 버튼을 누르면 점수를 보여주세요.",
+    std:"[9정02-04] 변수와 연산을 이용해 문제를 해결한다.",
+    exp:"변수를 만들고 값을 변경·출력할 수 있다.",
+    steps:["‘변수 만들기’로 score 만들기","시작하면 score를 0으로 설정","A 버튼: score를 1 증가","B 버튼: score 출력"],
+    checks:[
+      {label:"변수 사용", re:/let\s+\w+\s*=\s*0/},
+      {label:"변수 값 증가", re:/\w+\s*\+=\s*1|\w+\s*=\s*\w+\s*\+\s*1/},
+      {label:"A 버튼 이벤트", re:/Button\.A\b/},
+      {label:"B 버튼 이벤트", re:/Button\.B\b/},
+      {label:"숫자 출력", re:/basic\.showNumber\(/}
+    ]},
+  { id:"Q6", level:"중급", title:"반복으로 깜빡이는 LED",
+    desc:"LED 한 칸을 켰다 끄기를 계속 반복하세요.",
+    std:"[9정02-05] 반복 구조를 이해하고 활용한다.",
+    exp:"무한 반복과 일시 중지를 사용할 수 있다.",
+    steps:["‘무한반복’ 블록 사용","LED 켜기 (plot)","일시중지","LED 끄기 (unplot)","일시중지"],
+    checks:[
+      {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
+      {label:"LED 켜기(plot)", re:/led\.plot\(/},
+      {label:"LED 끄기(unplot)", re:/led\.unplot\(/},
+      {label:"일시중지 사용", re:/basic\.pause\(/}
+    ]},
+  { id:"Q7", level:"중급", title:"온도에 따라 반응하기",
+    desc:"온도가 25도보다 높으면 해 아이콘, 아니면 눈송이 아이콘을 보여주세요.",
+    std:"[9정02-03] 선택 구조를 이해하고 활용한다.",
+    exp:"센서 값과 조건문(if-else)을 함께 사용할 수 있다.",
+    steps:["‘무한반복’ 안에 조건문 넣기","온도 센서 값 비교(> 25)","참/거짓에 맞는 아이콘 출력"],
+    checks:[
+      {label:"온도 센서 사용", re:/input\.temperature\(\)/},
+      {label:"조건문(if/else) 사용", re:/if\s*\(/},
+      {label:"else 사용", re:/else/},
+      {label:"해 아이콘", re:/IconNames\.Sword|IconNames\.Happy|IconNames\.Yes|showIcon/}
+    ]},
+  { id:"Q8", level:"중급", title:"함수로 묶어 재사용",
+    desc:"‘응원’ 함수를 만들어 A 버튼과 B 버튼에서 모두 호출하세요.",
+    std:"[9정02-06] 함수를 정의하고 활용한다.",
+    exp:"함수를 만들고 여러 곳에서 호출할 수 있다.",
+    steps:["‘함수 만들기’로 응원 함수 만들기","함수 안에 아이콘/문자 출력 넣기","A·B 버튼에서 각각 호출"],
+    checks:[
+      {label:"함수 정의", re:/function\s+\w+\s*\(/},
+      {label:"A 버튼 이벤트", re:/Button\.A\b/},
+      {label:"B 버튼 이벤트", re:/Button\.B\b/},
+      {label:"함수 호출 2회 이상", test:(code)=>{
+        const m=code.match(/function\s+(\w+)\s*\(/); if(!m) return false;
+        const calls=code.match(new RegExp("\\b"+m[1]+"\\s*\\(\\s*\\)","g"))||[];
+        return calls.length>=3; // 정의 1 + 호출 2
+      }}
+    ]},
+
+  /* ---------------- 고급 ---------------- */
+  { id:"Q9", level:"고급", title:"가위바위보 게임",
+    desc:"micro:bit을 흔들면 0~2 사이의 무작위 수를 뽑아 0이면 ‘R’, 1이면 ‘P’, 2이면 ‘S’를 보여주세요. (if / else if 사용)",
+    std:"[9정02-03] 선택 구조를 이해하고 활용한다.",
+    exp:"난수와 다중 선택 구조(else if)를 함께 사용해 게임을 만들 수 있다.",
+    steps:["‘흔들었을 때’ 이벤트 만들기","변수에 randint(0, 2) 저장","if / else if / else로 값에 따라 분기","각 경우마다 R, P, S 문자 출력"],
+    checks:[
+      {label:"흔들기 이벤트 사용", re:/Gesture\.Shake/},
+      {label:"무작위 수 0~2", re:/randint\(\s*0\s*,\s*2\s*\)/},
+      {label:"else if 사용", re:/else\s+if\s*\(/},
+      {label:"문자 R, P, S 출력", test:c=>/["']R["']/.test(c)&&/["']P["']/.test(c)&&/["']S["']/.test(c)}
+    ]},
+  { id:"Q10", level:"고급", title:"리스트로 응원 문구 보여주기",
+    desc:"문구 3개 이상을 리스트(배열)에 담고, A 버튼을 누를 때마다 다음 문구를 순서대로 보여주세요.",
+    std:"[9정02-04] 변수와 자료 구조를 이용해 문제를 해결한다.",
+    exp:"배열과 인덱스 변수를 만들고 값을 순서대로 꺼내 쓸 수 있다.",
+    steps:["문자열 배열 만들기","인덱스 변수를 0으로 시작","A 버튼: 배열[인덱스] 출력","인덱스를 1 증가, 끝에 도달하면 0으로 되돌리기"],
+    checks:[
+      {label:"배열(리스트) 만들기", re:/\[\s*["'][^\]]*["']\s*,\s*["'][^\]]*["']\s*,\s*["'][^\]]*["']\s*\]/},
+      {label:"배열 값 꺼내기 [인덱스]", re:/\w+\s*\[\s*\w+\s*\]/},
+      {label:"A 버튼 이벤트", re:/Button\.A\b/},
+      {label:"인덱스 증가", re:/\w+\s*\+=\s*1|\w+\s*=\s*\w+\s*\+\s*1|\+\+/},
+      {label:"문자열 출력", re:/basic\.showString\(/}
+    ]},
+  { id:"Q11", level:"고급", title:"for 반복으로 LED 한 줄 켜기",
+    desc:"A 버튼을 누르면 for 반복문으로 맨 윗줄 LED 5개를 왼쪽부터 차례로 켜세요.",
+    std:"[9정02-05] 반복 구조를 이해하고 활용한다.",
+    exp:"for 반복문과 반복 변수를 좌표로 활용할 수 있다.",
+    steps:["A 버튼 이벤트 만들기","‘for 인덱스 0부터 4까지’ 블록 가져오기","led.plot(인덱스, 0) 넣기","일시중지로 차례대로 보이게 하기"],
+    checks:[
+      {label:"A 버튼 이벤트", re:/Button\.A\b/},
+      {label:"for 반복문 사용", re:/for\s*\(\s*let\s+\w+\s*=\s*0\s*;\s*\w+\s*<=?\s*\d+\s*;/},
+      {label:"led.plot 사용", re:/led\.plot\(/},
+      {label:"반복 변수를 좌표로 사용", re:/led\.plot\(\s*(\w+)\s*,/},
+      {label:"일시중지 사용", re:/basic\.pause\(/}
+    ]},
+  { id:"Q12", level:"고급", title:"중첩 반복으로 화면 채우기",
+    desc:"B 버튼을 누르면 5×5 LED 전체를 반복문 두 개(중첩)로 모두 켜세요.",
+    std:"[9정02-05] 반복 구조를 이해하고 활용한다.",
+    exp:"중첩 반복문으로 2차원 좌표를 다룰 수 있다.",
+    steps:["B 버튼 이벤트 만들기","바깥 for: x를 0~4","안쪽 for: y를 0~4","led.plot(x, y) 넣기"],
+    checks:[
+      {label:"B 버튼 이벤트", re:/Button\.B\b/},
+      {label:"for 반복문 2개 이상(중첩)", test:c=>(c.match(/for\s*\(\s*let\s/g)||[]).length>=2},
+      {label:"led.plot(x, y) 사용", re:/led\.plot\(\s*\w+\s*,\s*\w+\s*\)/}
+    ]},
+  { id:"Q13", level:"고급", title:"기울여서 점 움직이기",
+    desc:"좌우로 기울이면 가속도 값(X)에 따라 LED 점이 가운데 줄에서 좌우로 움직이게 하세요.",
+    std:"[9정02-04] 변수와 연산을 이용해 문제를 해결한다.",
+    exp:"센서 값을 변환(map)하고 범위를 제한해 출력에 연결할 수 있다.",
+    steps:["‘무한반복’ 안에서 시작","가속도 X 값을 변수에 저장","Math.map 으로 -1023~1023 → 0~4 변환","Math.constrain 으로 범위 제한","led.plot 으로 점 표시 (이전 화면은 지우기)"],
+    checks:[
+      {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
+      {label:"가속도 X 값 읽기", re:/input\.acceleration\(\s*Dimension\.X\s*\)/},
+      {label:"값 변환 (map 또는 나눗셈)", re:/Math\.map\(|pins\.map\(|\/\s*\d+/},
+      {label:"범위 제한 (constrain)", re:/Math\.constrain\(|Math\.min\(|Math\.max\(/},
+      {label:"화면 지우기", re:/basic\.clearScreen\(\)|led\.unplot\(/},
+      {label:"LED 켜기", re:/led\.plot\(/}
+    ]},
+  { id:"Q14", level:"고급", title:"밝기에 따라 자동 조명",
+    desc:"빛 세기가 50보다 작고(어둡고) 온도가 20보다 높으면 LED 전체를 켜고, 그렇지 않으면 끄세요. (논리 연산자 사용)",
+    std:"[9정02-03] 선택 구조를 이해하고 활용한다.",
+    exp:"논리 연산자로 여러 조건을 결합해 판단할 수 있다.",
+    steps:["‘무한반복’ 안에 if / else 넣기","빛 세기 < 50 조건 만들기","온도 > 20 조건 만들기","두 조건을 ‘그리고(&&)’로 연결","참이면 전체 켜기, 아니면 지우기"],
+    checks:[
+      {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
+      {label:"빛 세기 센서 사용", re:/input\.lightLevel\(\)/},
+      {label:"온도 센서 사용", re:/input\.temperature\(\)/},
+      {label:"논리 연산자(&& 또는 ||) 사용", re:/&&|\|\|/},
+      {label:"else 사용", re:/else/},
+      {label:"전체 켜기 또는 끄기", re:/led\.plotBrightness\(|basic\.showLeds\(|basic\.clearScreen\(\)|basic\.showIcon\(/}
+    ]},
+  { id:"Q15", level:"고급", title:"라디오로 숫자 보내고 받기",
+    desc:"같은 그룹으로 라디오를 설정하고, A 버튼을 누르면 숫자를 보내고, 숫자를 받으면 그 값을 화면에 보여주세요.",
+    std:"[9정01-03] 정보 통신과 네트워크의 원리를 이해한다.",
+    exp:"무선 통신으로 두 기기가 데이터를 주고받는 구조를 구현할 수 있다.",
+    steps:["시작하면 라디오 그룹 설정","A 버튼: 숫자 보내기","‘라디오로 숫자를 받았을 때’ 이벤트 만들기","받은 숫자를 화면에 출력"],
+    checks:[
+      {label:"라디오 그룹 설정", re:/radio\.setGroup\(\s*\d+\s*\)/},
+      {label:"A 버튼 이벤트", re:/Button\.A\b/},
+      {label:"숫자 보내기", re:/radio\.sendNumber\(/},
+      {label:"숫자 받았을 때 이벤트", re:/radio\.onReceivedNumber\(/},
+      {label:"받은 숫자 출력", re:/basic\.showNumber\(/}
+    ]},
+  { id:"Q16", level:"고급", title:"종합: 반응 속도 게임",
+    desc:"A 버튼을 누르면 무작위 시간(1~3초) 뒤에 LED가 켜지고, 켜진 뒤 B 버튼을 누르기까지 걸린 시간(ms)을 보여주세요. 시작 함수를 만들어 사용하세요.",
+    std:"[9정02-06] 함수를 정의하고 활용한다.",
+    exp:"변수·함수·무작위·시간·이벤트를 종합해 완성도 있는 프로그램을 만들 수 있다.",
+    steps:["‘시작’ 함수 만들기(무작위 대기 → 점 켜기 → 시작 시각 저장)","A 버튼에서 시작 함수 호출","B 버튼에서 (현재 시각 - 시작 시각) 계산","결과 숫자 출력"],
+    checks:[
+      {label:"함수 정의", re:/function\s+\w+\s*\(/},
+      {label:"무작위 대기 시간", re:/randint\(/},
+      {label:"일시중지 사용", re:/basic\.pause\(/},
+      {label:"시간 측정(runningTime)", re:/input\.runningTime\(\)/},
+      {label:"시간 차이 계산(빼기)", re:/runningTime\(\)\s*-\s*\w+|\w+\s*=\s*input\.runningTime\(\)\s*-/},
+      {label:"A 버튼과 B 버튼 이벤트", test:c=>/Button\.A\b/.test(c)&&/Button\.B\b/.test(c)},
+      {label:"숫자 출력", re:/basic\.showNumber\(/}
+    ]}
+];
+
+/* ============ 상태 ============ */
+let state = load();
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem(STORE)); if(s&&s.q) return s; }catch(e){}
+  return {stuId:"",stuName:"",cur:0,q:{}};
+}
+function save(){ try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){} }
+function qs(id){ return state.q[id]||(state.q[id]={tries:0,first:0,done:false,last:null,code:""}); }
+const $=id=>document.getElementById(id);
+
+/* ============ 편집기 연결 ============ */
+let editorCode = "";
+let connected = false;
+window.addEventListener("message",ev=>{
+  const d=ev.data; if(!d||typeof d!=="object") return;
+  if(!/makecode\.microbit\.org$/.test(new URL(ev.origin).hostname)) return;
+  if(d.type==="pxthost"){
+    if(!connected){connected=true;$("status").textContent="MakeCode 연결됨";$("status").classList.add("on");}
+    if(d.action==="workspacesync"||d.action==="workspacesave"){
+      const files=(d.project&&d.project.text)||{};
+      if(files["main.ts"]) editorCode=files["main.ts"];
+      if(d.action==="workspacesync"){
+        ev.source.postMessage({type:"pxthost",action:"workspacesync",id:d.id,resp:{projects:[]} },ev.origin);
+      }
+    }
+  }
+});
+setTimeout(()=>{ if(!connected) $("status").textContent="직접 붙여넣기 모드"; },8000);
+
+/* ============ 렌더링 ============ */
+function renderLed(){
+  const led=$("led"); led.innerHTML="";
+  for(let i=0;i<25;i++){const d=document.createElement("i"); led.appendChild(d);}
+  const heart=[1,3,5,6,7,8,9,11,12,13,17];
+  const ps=[1,3,5,6,7,8,9,11,12,13,17];
+  ps.forEach(i=>led.children[i].classList.add("on"));
+}
+function renderChips(){
+  const box=$("chips"); box.innerHTML="";
+  QUESTIONS.forEach((q,i)=>{
+    const b=document.createElement("button");
+    b.className="chip"+(i===state.cur?" active":"")+(qs(q.id).done?" done":"");
+    b.textContent=(i+1)+". "+q.title;
+    b.onclick=()=>{state.cur=i;save();renderAll();};
+    box.appendChild(b);
+  });
+}
+function renderQuestion(){
+  const q=QUESTIONS[state.cur], s=qs(q.id);
+  $("qLevel").textContent=q.level;
+  $("qTitle").textContent=q.title;
+  $("qDesc").textContent=q.desc;
+  $("qStd").textContent=q.std;
+  $("qExp").textContent=q.exp;
+  $("qSteps").innerHTML=q.steps.map(t=>"<li>"+esc(t)+"</li>").join("");
+  $("qTry").textContent=s.tries+"회";
+  $("qFirst").textContent=s.done?(s.first+"번째 제출"):"아직 미완성";
+  $("btnPrev").disabled=state.cur===0;
+  $("btnNext").disabled=state.cur===QUESTIONS.length-1;
+  $("pasteBox").value=s.code||"";
+  showResult(s.last);
+}
+function showResult(last){
+  const r=$("result"), c=$("checks");
+  c.innerHTML=""; r.className="result";
+  if(!last){return;}
+  r.classList.add(last.pass?"pass":"fail");
+  r.textContent=last.pass?"🎉 통과! 필요한 블록이 모두 들어 있어요.":"아직 부족해요. 아래 빨간 항목을 확인해 보세요.";
+  last.items.forEach(it=>{
+    const li=document.createElement("li");
+    li.className=it.ok?"pass":"fail";
+    li.textContent=(it.ok?"✔ ":"✘ ")+it.label;
+    c.appendChild(li);
+  });
+}
+function renderStats(){
+  const total=QUESTIONS.length;
+  const done=QUESTIONS.filter(q=>qs(q.id).done).length;
+  const sub=QUESTIONS.reduce((a,q)=>a+qs(q.id).tries,0);
+  const pct=Math.round(done/total*100);
+  $("pct").textContent=pct+"%"; $("bar").style.width=pct+"%";
+  $("sTotal").textContent=total; $("sDone").textContent=done; $("sSubmit").textContent=sub;
+}
+function renderBadges(){
+  const box=$("badges"); box.innerHTML="";
+  QUESTIONS.forEach((q,i)=>{
+    const done=qs(q.id).done;
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="badge"+(done?" done":"")+(i===state.cur?" cur":"");
+    b.textContent=i+1;
+    b.title=`${i+1}번 ${q.title} — ${done?"통과":"미완성"}`;
+    b.setAttribute("aria-label",b.title);
+    b.onclick=()=>{state.cur=i;save();renderAll();};
+    box.appendChild(b);
+  });
+}
+function renderAll(){renderBadges();renderChips();renderQuestion();renderStats();}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+
+/* ============ 채점 ============ */
+function grade(q,code){
+  const items=q.checks.map(c=>({label:c.label, ok: c.test? !!c.test(code) : c.re.test(code)}));
+  return {pass:items.every(i=>i.ok),items};
+}
+$("btnSubmit").onclick=()=>{
+  if(!state.stuId.trim()||!state.stuName.trim()){alert("학번과 이름을 먼저 입력해 주세요.");return;}
+  const q=QUESTIONS[state.cur], s=qs(q.id);
+  const code=($("pasteBox").value.trim()||editorCode||"").trim();
+  if(!code){alert("채점할 코드가 없어요. MakeCode에서 작업하거나 코드를 붙여넣어 주세요.");return;}
+  const res=grade(q,code);
+  s.tries++; s.code=code; s.last={pass:res.pass,items:res.items,at:Date.now()};
+  if(res.pass&&!s.done){s.done=true;s.first=s.tries;}
+  save(); renderAll();
+};
+$("btnResetQ").onclick=()=>{
+  if(!confirm("이 문항의 기록을 지우고 새로 시작할까요?"))return;
+  delete state.q[QUESTIONS[state.cur].id]; save(); renderAll();
+};
+$("btnResetAll").onclick=()=>{
+  if(!confirm("모든 문항의 진행 상태를 초기화할까요? 되돌릴 수 없어요."))return;
+  state.q={};state.cur=0; save(); renderAll();
+};
+$("btnExit").onclick=()=>{ if(confirm("실습을 마치고 나갈까요? (기록은 이 기기에 저장돼 있어요)")){ location.href="about:blank"; } };
+$("btnPrev").onclick=()=>{if(state.cur>0){state.cur--;save();renderAll();}};
+$("btnNext").onclick=()=>{if(state.cur<QUESTIONS.length-1){state.cur++;save();renderAll();}};
+$("btnReload").onclick=()=>{ $("editor").src=$("editor").src; connected=false;$("status").classList.remove("on");$("status").textContent="MakeCode 연결 중..."; };
+$("pasteBox").addEventListener("input",()=>{ qs(QUESTIONS[state.cur].id).code=$("pasteBox").value; save(); });
+
+/* 학생 정보 자동 저장 */
+$("stuId").value=state.stuId; $("stuName").value=state.stuName;
+$("stuId").oninput=e=>{state.stuId=e.target.value;save();};
+$("stuName").oninput=e=>{state.stuName=e.target.value;save();};
+
+/* ============ CSV ============ */
+function hash(str){ // 간단한 검증 코드(위·변조 방지용 가벼운 해시)
+  let h=2166136261>>>0;
+  for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+  return h.toString(36).toUpperCase();
+}
+function rowFor(q){
+  const s=qs(q.id);
+  const base=[state.stuId,state.stuName,q.id,q.title,s.done?"완성":"미완성",s.tries,s.done?s.first:""].join("|");
+  return {cols:[state.stuId,state.stuName,q.id,q.title,s.done?"완성":"미완성",s.tries,s.done?s.first:""],
+          sig:hash(base+SALT)};
+}
+function toCsv(rows){
+  const head=["학번","이름","문항","제목","상태","제출횟수","통과제출차수","검증코드"];
+  const lines=[head].concat(rows.map(r=>r.cols.concat([r.sig])));
+  return "\uFEFF"+lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+}
+function download(name,text){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([text],{type:"text/csv;charset=utf-8"}));
+  a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+$("btnAllCsv").onclick=()=>{
+  if(!state.stuId.trim()||!state.stuName.trim()){alert("학번과 이름을 먼저 입력해 주세요.");return;}
+  download(`결과_${state.stuId}_${state.stuName}.csv`,toCsv(QUESTIONS.map(rowFor)));
+};
+$("btnQCsv").onclick=()=>{
+  if(!state.stuId.trim()||!state.stuName.trim()){alert("학번과 이름을 먼저 입력해 주세요.");return;}
+  const q=QUESTIONS[state.cur];
+  download(`${q.id}_${state.stuId}_${state.stuName}.csv`,toCsv([rowFor(q)]));
+};
+
+/* ============ 교사용 평가 모드 ============ */
+let teacherOn=false;
+$("btnEval").onclick=()=>{
+  if(!teacherOn){
+    const pw=prompt("교사용 비밀번호를 입력하세요.");
+    if(pw===null)return;
+    if(pw!==TEACHER_PASSWORD){alert("비밀번호가 맞지 않아요.");return;}
+    teacherOn=true;
+  }
+  $("evalPanel").classList.toggle("hidden");
+};
+function parseCsv(text){
+  text=text.replace(/^\uFEFF/,"");
+  const rows=[];let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch=='"') q=true;
+    else if(ch==","){row.push(cur);cur="";}
+    else if(ch=="\n"){row.push(cur);rows.push(row);row=[];cur="";}
+    else if(ch!="\r") cur+=ch;
+  }
+  if(cur!==""||row.length){row.push(cur);rows.push(row);}
+  return rows;
+}
+$("csvFile").onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const rows=parseCsv(await f.text()).slice(1).filter(r=>r.length>=8);
+  let html="<table><tr><th>학번</th><th>이름</th><th>문항</th><th>상태</th><th>제출</th><th>검증</th></tr>";
+  let okN=0;
+  rows.forEach(r=>{
+    const base=r.slice(0,7).join("|");
+    const valid=hash(base+SALT)===r[7];
+    if(valid)okN++;
+    html+=`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])} ${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td><td class="${valid?"tag-ok":"tag-bad"}">${valid?"정상":"변조 의심"}</td></tr>`;
+  });
+  html+="</table>";
+  $("evalOut").innerHTML=`<p class="muted" style="margin-top:10px">검증 결과: 전체 ${rows.length}행 중 정상 ${okN}행</p>`+html;
+};
+
+/* ============ 시작 ============ */
+renderLed();
+renderAll();
+</script>
+</body>
+</html>
