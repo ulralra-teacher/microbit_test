@@ -493,6 +493,8 @@ function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",
 
 /* ============ 채점 ============ */
 function grade(q,code){
+  // 한글 등 비영문 이름(함수·변수)도 인식되도록, ASCII가 아닌 글자는 'x'로 바꿔서 검사해요.
+  code=code.replace(/[^\x00-\x7F]/g,"x");
   const items=q.checks.map(c=>({label:c.label, ok: c.test? !!c.test(code) : c.re.test(code)}));
   return {pass:items.every(i=>i.ok),items};
 }
