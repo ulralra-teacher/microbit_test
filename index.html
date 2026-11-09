@@ -493,6 +493,14 @@ function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",
 
 /* ============ 채점 ============ */
 function grade(q,code){
+  // 복사·붙여넣기 때 섞이는 특수 문자를 먼저 정리해요.
+  code=code
+    .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g," ")  // 특수 공백 -> 일반 공백
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g,"")  // 보이지 않는 문자 제거
+    .replace(/[\u2018\u2019\u02BC]/g,"'")  // 곡선 작은따옴표
+    .replace(/[\u201C\u201D]/g,'"')  // 곡선 큰따옴표
+    .replace(/\uFF08/g,"(").replace(/\uFF09/g,")")  // 전각 괄호
+    .replace(/\r\n?/g,"\n");
   // 한글 등 비영문 이름(함수·변수)도 인식되도록, ASCII가 아닌 글자는 'x'로 바꿔서 검사해요.
   code=code.replace(/[^\x00-\x7F]/g,"x");
   const items=q.checks.map(c=>({label:c.label, ok: c.test? !!c.test(code) : c.re.test(code)}));
