@@ -23,7 +23,12 @@ header h1{margin:0;font-size:1.35rem}
 .led i{width:10px;height:10px;border-radius:50%;background:#2a3550;display:block}
 .led i.on{background:#ff4d4d;box-shadow:0 0 6px #ff4d4d}
 .brand small{display:block;opacity:.85;font-size:.75rem}
-.stu{display:flex;gap:8px}
+.stu{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.submitbtn{background:#fff;color:#1f3fa8;border:0;font-weight:700;padding:8px 14px;border-radius:9px;white-space:nowrap}
+.submitbtn:hover{background:#eef3ff}
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:1200;max-width:min(92vw,640px);padding:12px 18px;border-radius:12px;font-weight:600;box-shadow:0 6px 24px rgba(20,40,80,.25);background:#1d2433;color:#fff}
+.toast.ok{background:#146c43}
+.toast.bad{background:#9f2d2d}
 header .stu input[type=text]{width:110px;background:rgba(255,255,255,.95);border:1px solid rgba(255,255,255,.6);padding:7px 10px}
 .qnav{background:#fff;border-bottom:1px solid var(--line);padding:8px 0}
 .qnav .chips{margin:0}
@@ -113,6 +118,7 @@ th{background:#f1f5fc}
     <div class="stu" aria-label="학생 정보">
       <input type="text" id="stuId" placeholder="학번" aria-label="학번" autocomplete="off" inputmode="numeric">
       <input type="text" id="stuName" placeholder="이름" aria-label="이름" autocomplete="off">
+      <button id="btnSubmitResult" class="submitbtn" type="button">📤 결과 제출</button>
     </div>
     <div class="badges" id="badges" aria-label="문항별 통과 현황"></div>
     <span class="status" id="status">MakeCode 연결 중...</span>
@@ -187,6 +193,8 @@ th{background:#f1f5fc}
   </div>
 </main>
 
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
 <!-- 선생님 화면: 미션 문구 편집 -->
 <div id="teacherScreen" class="tscreen hidden" role="dialog" aria-modal="true" aria-label="선생님 화면">
   <div class="tbar">
@@ -214,6 +222,152 @@ th{background:#f1f5fc}
         <b style="font-size:.88rem">채점 항목 <span class="muted">(읽기 전용)</span></b>
         <ul class="checks" id="tChecks"></ul>
         <p class="note">채점 기준은 문구가 아니라 코드(<code>QUESTIONS</code>의 <code>checks</code>)에서 바꿀 수 있어요.</p>
+      </div>
+      <div style="margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8faff">
+        <b>📥 결과 받을 곳 (구글 시트)</b>
+        <p class="note" style="margin-top:4px">학생이 <b>📤 결과 제출</b>을 누르면 이 주소로 보내져, 시트에 <b>학생 1명 = 1줄</b>로 엑셀처럼 정리돼요. 입력한 주소는 아래 <b>🚀 학생에게 적용하기</b>를 눌러야 학생들에게도 적용돼요.</p>
+        <label for="cUrl">Apps Script 웹 앱 주소 <span class="muted">(…/exec 로 끝나요)</span></label>
+        <input type="text" id="cUrl" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
+        <div class="row" style="margin-top:8px"><button id="cTest" type="button">🔌 연결 테스트</button></div>
+        <details class="note" style="margin-top:8px">
+          <summary><b>처음 한 번만: 시트 연결 방법 (5분)</b></summary>
+          <ol style="margin:6px 0 0 18px;padding:0">
+            <li>결과를 모을 구글 시트를 열고 <b>확장 프로그램 → Apps Script</b>를 누릅니다.</li>
+            <li>기본 코드를 모두 지우고, 아래 <b>코드 복사</b> 버튼으로 복사한 코드를 붙여넣은 뒤 저장(💾)합니다.</li>
+            <li><b>배포 → 새 배포 → 유형: 웹 앱</b>을 고르고, 실행 계정은 <b>나</b>, 액세스 권한은 <b>모든 사용자</b>로 한 뒤 <b>배포</b>합니다. (권한 승인 창이 뜨면 허용)</li>
+            <li>나온 <b>웹 앱 URL</b>을 위 주소 칸에 붙여넣고 <b>연결 테스트</b>를 눌러 확인합니다.</li>
+            <li>마지막으로 <b>🚀 학생에게 적용하기</b>를 누르면 끝이에요.</li>
+          </ol>
+          <div class="row" style="margin:8px 0 4px"><button id="gsCopy" type="button">📋 Apps Script 코드 복사</button></div>
+          <textarea id="gsCode" readonly rows="8" spellcheck="false">/**
+ * micro:bit 실습 결과 수집 (구글 시트 정리용)
+ *
+ * - 학생이 [결과 제출]을 누르면 '학생결과' 시트에 학생 1명 = 1줄로 정리돼요. (엑셀처럼 보기)
+ *   같은 학번+이름이 다시 제출하면 새 줄이 생기지 않고 그 줄이 최신 결과로 바뀌어요.
+ * - '제출기록' 시트에는 제출할 때마다 원본이 한 줄씩 남아요. (실수로 덮어써도 복구 가능)
+ * - 웹 앱으로 배포: 실행 계정 = 나 / 액세스 권한 = 모든 사용자
+ */
+const SPREADSHEET_ID = "1-bNjcjzMbLnoKpWx7j686ZBHpIY8InAlCV1GRY36ypk"; // 이 시트에 기록해요. (시트에서 열었다면 비워 둬도 돼요: "")
+const RESULT_SHEET = "학생결과";
+const LOG_SHEET = "제출기록";
+const FIXED_COLS = 3; // 학번, 이름, 완성
+
+function doGet(e) {
+  const p = (e &amp;&amp; e.parameter) || {};
+  let out;
+  try {
+    const action = p.action || "ping";
+    if (action === "ping") out = { ok: true, message: "결과 수집 서버가 동작 중이에요.", time: now_() };
+    else if (action === "submit") out = submit_(p);
+    else out = { ok: false, error: "알 수 없는 요청이에요." };
+  } catch (err) {
+    out = { ok: false, error: String((err &amp;&amp; err.message) || err) };
+  }
+  return reply_(out, p.cb);
+}
+
+function reply_(obj, cb) {
+  const json = JSON.stringify(obj);
+  if (cb &amp;&amp; /^[A-Za-z_$][\w$]{0,60}$/.test(cb)) {
+    return ContentService.createTextOutput(cb + "(" + json + ");").setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+function now_() { return Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss"); }
+function open_() { return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet(); }
+function clean_(v, max) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, max); }
+function norm_(v) { return String(v == null ? "" : v).replace(/\s+/g, "").toLowerCase(); }
+
+// d = "통과(0/1),제출횟수,통과차수;" 를 문항 순서대로 이어 붙인 글자
+function parse_(d) {
+  const parts = String(d || "").split(";");
+  if (parts.length &lt; 1 || parts.length &gt; 60) throw new Error("결과 형식이 올바르지 않아요.");
+  return parts.map(function (t) {
+    const a = t.split(",").map(function (x) { return parseInt(x, 10); });
+    if (a.length !== 3 || a.some(function (n) { return isNaN(n) || n &lt; 0 || n &gt; 999; })) throw new Error("결과 형식이 올바르지 않아요.");
+    return { done: a[0] === 1, tries: a[1], first: a[2] };
+  });
+}
+
+function cell_(x) {
+  if (x.done) return { text: "✔ " + x.first + "회", bg: "#d9f2e3" };   // 통과 (몇 번째 제출에 통과했는지)
+  if (x.tries &gt; 0) return { text: "✘ " + x.tries + "회", bg: "#fde2e2" }; // 제출했지만 아직 미통과
+  return { text: "", bg: "#ffffff" };                                  // 아직 안 함
+}
+
+function getSheet_(ss, name) { return ss.getSheetByName(name) || ss.insertSheet(name); }
+
+function ensureHeader_(sh, n) {
+  const header = ["학번", "이름", "완성"];
+  for (let i = 1; i &lt;= n; i++) header.push(i + "번");
+  header.push("마지막 제출");
+  const cur = sh.getRange(1, 1, 1, header.length).getValues()[0];
+  if (JSON.stringify(cur) !== JSON.stringify(header)) {
+    sh.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight("bold").setBackground("#e8f0ff");
+    sh.setFrozenRows(1);
+    sh.setFrozenColumns(2);
+  }
+}
+
+function submit_(p) {
+  const id = clean_(p.id, 20), name = clean_(p.name, 20);
+  if (!id || !name) throw new Error("학번과 이름이 필요해요.");
+  const items = parse_(p.d);
+  const n = items.length;
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = open_();
+    const sh = getSheet_(ss, RESULT_SHEET);
+    ensureHeader_(sh, n);
+
+    // 같은 학번+이름이면 그 줄을 갱신, 없으면 새 줄 추가
+    const key = norm_(id) + "|" + norm_(name);
+    const last = sh.getLastRow();
+    let row = -1;
+    if (last &gt; 1) {
+      const vals = sh.getRange(2, 1, last - 1, 2).getValues();
+      for (let i = 0; i &lt; vals.length; i++) {
+        if (norm_(vals[i][0]) + "|" + norm_(vals[i][1]) === key) { row = i + 2; break; }
+      }
+    }
+    const isNew = row &lt; 0;
+    if (isNew) row = last + 1;
+
+    const cells = items.map(cell_);
+    const doneN = items.filter(function (x) { return x.done; }).length;
+    const time = now_();
+    const line = [id, name, doneN].concat(cells.map(function (c) { return c.text; })).concat([time]);
+
+    sh.getRange(row, 1, 1, 2).setNumberFormat("@");            // 학번·이름은 글자로 저장 (앞자리 0 보존, 수식 방지)
+    sh.getRange(row, 1, 1, line.length).setValues([line]);
+    sh.getRange(row, FIXED_COLS + 1, 1, n).setBackgrounds([cells.map(function (c) { return c.bg; })]);
+    if (isNew &amp;&amp; sh.getLastRow() &gt; 2) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, line.length).sort({ column: 1, ascending: true }); // 새 학생이 추가되면 학번 순으로 정렬
+    }
+
+    // 제출기록(원본) 한 줄 추가
+    const lg = getSheet_(ss, LOG_SHEET);
+    if (lg.getLastRow() === 0) {
+      lg.getRange(1, 1, 1, 5).setValues([["제출시각", "학번", "이름", "완성", "결과(원본)"]]).setFontWeight("bold").setBackground("#f1f5fc");
+      lg.setFrozenRows(1);
+    }
+    const r = lg.getLastRow() + 1;
+    lg.getRange(r, 1, 1, 5).setNumberFormat("@").setValues([[time, id, name, String(doneN), String(p.d)]]);
+
+    return { ok: true, updated: !isNew, doneCount: doneN, total: n, time: time };
+  } finally {
+    lock.releaseLock();
+  }
+}
+</textarea>
+          <p class="note">· 코드 맨 위 <code>SPREADSHEET_ID</code>가 결과를 기록할 시트예요. 다른 시트에 모으려면 그 시트의 ID로 바꾸거나 <code>""</code>(빈 글자)로 두세요. (빈 글자면 Apps Script를 연 그 시트에 기록돼요)<br>
+          · 결과는 <b>학생결과</b>(1명 1줄)와 <b>제출기록</b>(제출할 때마다 원본 1줄) 시트에 쌓여요.<br>
+          · 액세스 권한에 ‘모든 사용자’가 보이지 않으면(학교 계정 정책) 개인 구글 계정으로 만든 시트에서 진행해 주세요.<br>
+          · 코드를 고쳐 다시 배포할 때는 <b>배포 관리 → 수정 → 새 버전</b>으로 해야 주소가 바뀌지 않아요.</p>
+        </details>
       </div>
       <div style="margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8faff">
         <div class="row">
@@ -746,7 +900,7 @@ function loadRemote(){
   // 주소 뒤에 매번 다른 값을 붙여서, GitHub Pages가 옛 파일을 캐시해 두고 있어도 F5(새로고침)만 누르면 최신 문구를 읽어 와요.
   fetch("missions.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{
     if(!j) return;
-    remoteM=cleanMissions(j); applyAll(); renderAll(); refreshTeacher();
+    remoteM=cleanMissions(j); remoteC=cleanConfig(j); applyAll(); renderAll(); refreshTeacher();
   }).catch(()=>{});
 }
 
@@ -792,7 +946,7 @@ function askTeacher(){
 $("btnEdit").onclick=()=>{
   if(!askTeacher()) return;
   $("teacherScreen").classList.remove("hidden");
-  fillPub();
+  fillPub(); $("cUrl").value=getSubmitUrl();
   selectEdit(Math.min(state.cur,QUESTIONS.length-1));
 };
 /* ---- 학생에게 바로 적용: GitHub에 missions.json을 자동으로 저장 (파일을 직접 올릴 필요 없음) ----
@@ -816,7 +970,7 @@ function pubReady(){ return !!(pub.repo&&pub.token); }
 function missionsJson(){
   const missions={};
   QUESTIONS.forEach((q,i)=>{ if(isModified(i)) missions[q.id]=missionOf(q); });
-  return {count:Object.keys(missions).length,text:JSON.stringify({version:1,updatedAt:new Date().toISOString(),missions},null,2)};
+  return {count:Object.keys(missions).length,text:JSON.stringify({version:1,updatedAt:new Date().toISOString(),config:{submitUrl:getSubmitUrl()},missions},null,2)};
 }
 $("pSave").onclick=()=>{
   const o={repo:$("pRepo").value.trim(),branch:$("pBranch").value.trim()||"main",
@@ -884,8 +1038,9 @@ $("tImportBtn").onclick=()=>$("tImportFile").click();
 $("tImportFile").onchange=async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
   let j; try{ j=JSON.parse(await f.text()); }catch(err){ tMsg("파일을 읽지 못했어요. missions.json 형식이 맞는지 확인해 주세요.","bad"); return; }
-  const c=cleanMissions(j);
-  if(!Object.keys(c).length){ tMsg("불러올 문항이 없어요. (Q1, Q2 … 형식의 missions가 들어 있어야 해요)","bad"); return; }
+  const c=cleanMissions(j), cc=cleanConfig(j);
+  if(!Object.keys(c).length&&!cc){ tMsg("불러올 내용이 없어요. (Q1, Q2 … 형식의 missions가 들어 있어야 해요)","bad"); return; }
+  if(cc){ draftC=cc; saveDraftC(); $("cUrl").value=getSubmitUrl(); }
   Object.assign(draftM,c); dirty=true; saveDraft(); applyAll(); renderAll(); selectEdit(editIdx);
   tMsg(`✔ ${Object.keys(c).length}개 문항을 불러왔어요.`,"ok");
 };
@@ -897,8 +1052,90 @@ $("tResetOne").onclick=()=>{
 };
 $("tClearDraft").onclick=()=>{
   if(!confirm("이 기기에 저장된 수정본을 모두 지울까요?\n(배포된 missions.json이 있으면 그 문구로, 없으면 처음 문구로 돌아가요.)")) return;
-  draftM={}; dirty=true; saveDraft(); applyAll(); renderAll(); selectEdit(editIdx);
+  draftM={}; draftC=null; saveDraftC(); $("cUrl").value=getSubmitUrl(); dirty=true; saveDraft(); applyAll(); renderAll(); selectEdit(editIdx);
   tMsg("이 기기 수정본을 지웠어요.","ok");
+};
+
+/* ============ 결과 제출 (학생 → 선생님 구글 시트) ============
+   · 선생님 화면에서 Apps Script 웹 앱 주소를 넣으면 missions.json(config)에 담겨 학생들에게 배포돼요.
+   · 브라우저 보안 규칙(CORS)에 걸리지 않도록 ‘스크립트 호출(JSONP)’ 방식으로 보내고, 시트에 기록됐다는 응답이 와야 ‘제출 완료’를 보여줘요. */
+const DEFAULT_SUBMIT_URL="";   // 여기에 직접 적어도 되지만, 보통은 선생님 화면에서 설정해요.
+const SUBMIT_URL_RE=/^https:\/\/script\.google\.com\/(?:a\/macros\/[\w.-]+|macros)\/s\/[\w-]+\/exec$/;
+const CKEY="mb_config_draft_v1";
+function cleanConfig(o){
+  const c=o&&typeof o==="object"&&o.config&&typeof o.config==="object"?o.config:null;
+  if(!c) return null;
+  const u=clip(c.submitUrl,300);
+  return {submitUrl:SUBMIT_URL_RE.test(u)?u:""};
+}
+function loadDraftC(){ try{ return cleanConfig({config:JSON.parse(localStorage.getItem(CKEY))}); }catch(e){ return null; } }
+function saveDraftC(){ try{ if(draftC) localStorage.setItem(CKEY,JSON.stringify(draftC)); else localStorage.removeItem(CKEY); }catch(e){} }
+let draftC=loadDraftC(), remoteC=null;
+function getSubmitUrl(){ if(draftC) return draftC.submitUrl; if(remoteC) return remoteC.submitUrl; return DEFAULT_SUBMIT_URL; }
+
+function jsonp(url,params,timeoutMs){
+  return new Promise((resolve,reject)=>{
+    const cb="__mbcb"+Date.now()+Math.floor(Math.random()*1e6);
+    const s=document.createElement("script");
+    let finished=false;
+    const finish=()=>{ finished=true; delete window[cb]; s.remove(); clearTimeout(timer); };
+    const timer=setTimeout(()=>{ if(!finished){ finish(); reject(new Error("timeout")); } },timeoutMs||15000);
+    window[cb]=data=>{ if(!finished){ finish(); resolve(data); } };
+    s.onerror=()=>{ if(!finished){ finish(); reject(new Error("load")); } };
+    s.src=url+"?"+new URLSearchParams(Object.assign({},params,{cb})).toString();
+    document.head.appendChild(s);
+  });
+}
+let toastTimer=null;
+function toast(text,kind,ms){
+  const t=$("toast"); t.textContent=text; t.className="toast"+(kind?" "+kind:"");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),ms||(kind==="bad"?9000:6000));
+}
+function packResults(){   // 문항 순서대로 "통과(0/1),제출횟수,통과차수" 를 ; 로 이어 붙여요.
+  return QUESTIONS.map(q=>{ const s=qs(q.id); return [s.done?1:0,s.tries,s.done?s.first:0].join(","); }).join(";");
+}
+$("btnSubmitResult").onclick=async()=>{
+  const id=state.stuId.trim(), name=state.stuName.trim();
+  if(!id||!name){ toast("학번과 이름을 먼저 입력해 주세요.","bad"); $(id?"stuName":"stuId").focus(); return; }
+  const url=getSubmitUrl();
+  if(!url){ toast("결과를 받을 주소가 아직 설정되지 않았어요. 선생님께 알려 주세요.","bad"); return; }
+  const doneN=QUESTIONS.filter(q=>qs(q.id).done).length;
+  if(!confirm(`학번 ${id} ${name} 학생의 결과를 제출할까요?\n(완성 ${doneN}문항 / 전체 ${QUESTIONS.length}문항)\n다시 제출하면 최신 결과로 바뀌어요.`)) return;
+  const btn=$("btnSubmitResult"); btn.disabled=true; toast("제출하는 중이에요...","",30000);
+  try{
+    const r=await jsonp(url,{action:"submit",id,name,d:packResults()},20000);
+    if(r&&r.ok) toast(`✔ 제출 완료! 선생님께 전달됐어요. (완성 ${r.doneCount}/${r.total}문항${r.updated?" · 이전 결과를 최신으로 바꿨어요":""})`,"ok");
+    else toast("제출하지 못했어요: "+((r&&r.error)||"알 수 없는 오류"),"bad");
+  }catch(err){
+    console.error("제출 오류:",err);
+    toast("선생님께 전달되지 않았어요. 인터넷 연결을 확인하고 다시 눌러 보세요. 계속 안 되면 선생님께 알려 주세요.","bad");
+  }finally{ setTimeout(()=>{ btn.disabled=false; },1500); }
+};
+
+/* 선생님 화면: 결과 받을 주소 설정 */
+function onConfigInput(){
+  const u=$("cUrl").value.trim();
+  if(u&&!SUBMIT_URL_RE.test(u)){ tMsg("주소 형식이 달라요. Apps Script ‘웹 앱 URL’(…/exec 로 끝나는 주소)을 붙여넣어 주세요.","bad"); return; }
+  draftC={submitUrl:u}; saveDraftC(); dirty=true;
+  tMsg(u?"✔ 주소를 저장했어요. ‘🔌 연결 테스트’로 확인하고 ‘🚀 학생에게 적용하기’를 눌러 주세요.":"결과 받을 주소를 비웠어요. (적용하면 학생 화면의 제출이 막혀요)","ok");
+}
+$("cUrl").addEventListener("input",onConfigInput); $("cUrl").addEventListener("change",onConfigInput);
+$("cTest").onclick=async()=>{
+  const u=$("cUrl").value.trim();
+  if(!SUBMIT_URL_RE.test(u)){ tMsg("먼저 …/exec 로 끝나는 웹 앱 주소를 입력해 주세요.","bad"); return; }
+  tMsg("연결을 확인하는 중이에요...");
+  try{
+    const r=await jsonp(u,{action:"ping"},12000);
+    if(r&&r.ok) tMsg("✔ 연결됐어요! 학생들의 결과를 받을 준비가 됐어요.","ok");
+    else tMsg("연결은 됐지만 응답이 이상해요: "+((r&&r.error)||"알 수 없음"),"bad");
+  }catch(err){
+    tMsg("응답이 없어요. ① 배포할 때 액세스 권한이 ‘모든 사용자’인지 ② 주소가 …/exec 인지 ③ 코드를 고친 뒤 ‘새 버전’으로 다시 배포했는지 확인해 주세요.","bad");
+  }
+};
+$("gsCopy").onclick=async()=>{
+  const ta=$("gsCode");
+  try{ await navigator.clipboard.writeText(ta.value); tMsg("✔ 코드를 복사했어요. Apps Script 편집기에 붙여넣으세요.","ok"); }
+  catch(e){ ta.focus(); ta.select(); tMsg("자동 복사가 안 돼요. 코드 칸에서 전체 선택(Ctrl+A) 후 복사(Ctrl+C) 해 주세요.","bad"); }
 };
 
 /* ============ 시작 ============ */
