@@ -165,6 +165,10 @@ th{background:#f1f5fc}
           <div class="stat" style="flex:1">이 문항 제출 횟수<b id="qTry">0회</b><span>제출할 때마다 누적돼요.</span></div>
           <div class="stat" style="flex:1">완성까지<b id="qFirst">아직 미완성</b><span>처음 통과한 제출 횟수를 기록해요.</span></div>
         </div>
+        <div class="row" style="margin-top:12px">
+          <button id="btnSubmit" class="primary">✔ 제출하고 자동 채점</button>
+          <button id="btnReload">⟳ 편집기 새로고침</button>
+        </div>
       </section>
     </div>
 
@@ -174,12 +178,6 @@ th{background:#f1f5fc}
         <iframe id="editor" class="sim" title="MakeCode 편집기"
           src="https://makecode.microbit.org/?controller=1&lang=ko"
           allow="usb; autoplay; camera; microphone" loading="lazy"></iframe>
-        <div class="row" style="margin-top:12px">
-          <button id="btnSubmit" class="primary">✔ 제출하고 자동 채점</button>
-          <button id="btnClearBlocks">🧹 블록 모두 지우기</button>
-          <button id="btnReload">⟳ 편집기 새로고침</button>
-        </div>
-        <p id="clearMsg" class="note" role="status"></p>
         <p class="note">* 블록의 위치가 아니라, 필요한 블록이 코드에 모두 들어 있는지 검사합니다.</p>
         <div class="result" id="result"></div>
         <ul class="checks" id="checks"></ul>
@@ -422,7 +420,7 @@ const QUESTIONS = [
     desc:"시작하면 micro:bit LED에 하트 모양이 나타나게 하세요.",
     std:"[9정03-02] 문제 해결을 위한 추상화의 중요성을 이해하고, 핵심요소를 중심으로 알고리즘을 표현한다.",
     exp:"기본 출력 블록을 사용해 LED를 제어할 수 있다.",
-    steps:["‘기본’ 블록 중 ‘시작하면’ 확인","‘아이콘 출력’ 블록을 가져오기","하트 모양 선택"],
+    steps:["‘시작하면’ 블록 확인하기","‘시작하면’ 블록 안에 ‘아이콘 출력’ 블록 넣기","‘아이콘 출력’ 블록에서 하트 모양 선택하기"],
     checks:[
       {label:"아이콘 출력 블록 사용", re:/basic\.showIcon\(/},
       {label:"하트 아이콘 선택", re:/IconNames\.Heart/}
@@ -431,7 +429,7 @@ const QUESTIONS = [
     desc:"A 버튼을 누르면 ‘HI’ 문자열이 흐르며 나타나게 하세요.",
     std:"[9정01-03] 문제 해결 목적에 맞는 피지컬 컴퓨팅 구성요소를 선택하여 시스템을 구상한다.",
     exp:"버튼 이벤트 블록을 사용할 수 있다.",
-    steps:["‘입력’ 블록에서 ‘A 버튼을 눌렀을 때’ 가져오기","‘문자열 출력’ 블록 넣기","‘HI’ 입력"],
+    steps:["‘A 버튼을 눌렀을 때’ 블록 가져오기","‘A 버튼을 눌렀을 때’ 블록 안에 ‘문자열 출력’ 블록 넣기","‘문자열 출력’ 블록에 HI 입력하기"],
     checks:[
       {label:"A 버튼 이벤트 사용", re:/input\.onButtonPressed\(\s*Button\.A/},
       {label:"문자열 출력 블록 사용", re:/basic\.showString\(/},
@@ -441,7 +439,7 @@ const QUESTIONS = [
     desc:"A 버튼은 웃는 얼굴, B 버튼은 슬픈 얼굴을 보여주세요.",
     std:"[9정01-03] 문제 해결 목적에 맞는 피지컬 컴퓨팅 구성요소를 선택하여 시스템을 구상한다.",
     exp:"버튼별로 다른 동작을 지정할 수 있다.",
-    steps:["‘A 버튼을 눌렀을 때’ 블록 가져오기","‘B 버튼을 눌렀을 때’ 블록 가져오기","각 블록 안에 ‘아이콘 출력’ 블록을 넣어 서로 다른 아이콘 선택"],
+    steps:["‘A 버튼을 눌렀을 때’ 블록 가져오기","‘B 버튼을 눌렀을 때’ 블록 가져오기","두 블록 안에 각각 ‘아이콘 출력’ 블록 넣기","‘아이콘 출력’ 블록에서 서로 다른 아이콘 선택하기"],
     checks:[
       {label:"A 버튼 이벤트 사용", re:/Button\.A\b/},
       {label:"B 버튼 이벤트 사용", re:/Button\.B\b/},
@@ -452,7 +450,7 @@ const QUESTIONS = [
     desc:"micro:bit을 흔들면 1~6 사이의 무작위 수를 보여주세요.",
     std:"[9정03-08] 실생활의 문제를 탐색하여 발견하고, 프로그래밍을 통해 해결한다.",
     exp:"난수 블록과 흔들기 이벤트를 사용할 수 있다.",
-    steps:["‘흔들었을 때’ 블록 가져오기","‘무작위 수’ 블록 사용","범위를 1~6으로 설정","숫자 출력"],
+    steps:["‘흔들었을 때’ 블록 가져오기","‘흔들었을 때’ 블록 안에 ‘숫자 출력’ 블록 넣기","‘숫자 출력’ 블록에 ‘무작위 수’ 블록 넣기","‘무작위 수’ 블록의 범위를 1~6으로 설정하기"],
     checks:[
       {label:"흔들기 이벤트 사용", re:/input\.onGesture\(\s*Gesture\.Shake/},
       {label:"무작위 수 사용", re:/randint\(/},
@@ -462,7 +460,7 @@ const QUESTIONS = [
     desc:"A 버튼을 누를 때마다 점수 변수가 1씩 늘고, B 버튼을 누르면 점수를 보여주세요.",
     std:"[9정03-08] 실생활의 문제를 탐색하여 발견하고, 프로그래밍을 통해 해결한다.",
     exp:"변수를 만들고 값을 변경·출력할 수 있다.",
-    steps:["‘변수 만들기’로 score 만들기","시작하면 score를 0으로 설정","A 버튼: score를 1 증가","B 버튼: score 출력"],
+    steps:["‘변수 만들기’ 블록으로 score 변수 만들기","‘시작하면’ 블록 안에 ‘변수 설정’ 블록을 넣고 score를 0으로 설정하기","‘A 버튼을 눌렀을 때’ 블록 안에 ‘변수 증가’ 블록을 넣고 score를 1 증가시키기","‘B 버튼을 눌렀을 때’ 블록 안에 ‘숫자 출력’ 블록을 넣고 score 출력하기"],
     checks:[
       {label:"변수 사용", re:/let\s+\w+\s*=\s*0/},
       {label:"변수 값 증가", re:/\w+\s*\+=\s*1|\w+\s*=\s*\w+\s*\+\s*1/},
@@ -474,7 +472,7 @@ const QUESTIONS = [
     desc:"LED 한 칸을 켰다 끄기를 계속 반복하세요.",
     std:"[9정03-04] 사례를 중심으로 문제 해결에 적합한 전략을 선택하여 알고리즘을 설계한다.",
     exp:"무한 반복과 일시 중지를 사용할 수 있다.",
-    steps:["‘무한반복’ 블록 사용","LED 켜기 (plot)","일시중지","LED 끄기 (unplot)","일시중지"],
+    steps:["‘무한반복’ 블록 가져오기","‘무한반복’ 블록 안에 ‘LED 켜기(plot)’ 블록 넣기","‘일시중지’ 블록 넣기","‘LED 끄기(unplot)’ 블록 넣기","‘일시중지’ 블록 넣기"],
     checks:[
       {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
       {label:"LED 켜기(plot)", re:/led\.plot\(/},
@@ -485,7 +483,7 @@ const QUESTIONS = [
     desc:"온도가 25도보다 높으면 해 아이콘, 아니면 눈송이 아이콘을 보여주세요.",
     std:"[9정02-04] 사례를 중심으로 데이터 간의 관계를 파악하고, 데이터에 기반하여 의미를 해석한다.",
     exp:"센서 값과 조건문(if-else)을 함께 사용할 수 있다.",
-    steps:["‘무한반복’ 안에 조건문 넣기","온도 센서 값 비교(> 25)","참/거짓에 맞는 아이콘 출력"],
+    steps:["‘무한반복’ 블록 가져오기","‘무한반복’ 블록 안에 ‘if / else’ 블록 넣기","‘온도’ 블록으로 ‘온도 > 25’ 조건 만들기","참일 때와 거짓일 때 각각 ‘아이콘 출력’ 블록 넣기"],
     checks:[
       {label:"온도 센서 사용", re:/input\.temperature\(\)/},
       {label:"조건문(if/else) 사용", re:/if\s*\(/},
@@ -496,7 +494,7 @@ const QUESTIONS = [
     desc:"‘응원’ 함수를 만들어 A 버튼과 B 버튼에서 모두 호출하세요.",
     std:"[9정03-07] 프로그램 작성에서 함수를 활용하고, 프로그램 수행 결과를 디버거로 분석하여 오류를 수정한다.",
     exp:"함수를 만들고 여러 곳에서 호출할 수 있다.",
-    steps:["‘함수 만들기’로 응원 함수 만들기","함수 안에 아이콘/문자 출력 넣기","A·B 버튼에서 각각 호출"],
+    steps:["‘함수 만들기’ 블록으로 ‘응원’ 함수 만들기","‘응원’ 함수 안에 ‘아이콘 출력’ 블록(또는 ‘문자열 출력’ 블록) 넣기","‘A 버튼을 눌렀을 때’ 블록 가져오기","‘B 버튼을 눌렀을 때’ 블록 가져오기","두 블록 안에 각각 ‘응원’ 블록 넣기"],
     checks:[
       {label:"함수 정의", re:/function\s+\w+\s*\(/},
       {label:"A 버튼 이벤트", re:/Button\.A\b/},
@@ -513,7 +511,7 @@ const QUESTIONS = [
     desc:"micro:bit을 흔들면 0~2 사이의 무작위 수를 뽑아 0이면 ‘R’, 1이면 ‘P’, 2이면 ‘S’를 보여주세요. (if / else if 사용)",
     std:"[9정03-06] 논리 연산과 중첩 제어 구조를 활용하여 문제를 해결하는 프로그램을 작성한다.",
     exp:"난수와 다중 선택 구조(else if)를 함께 사용해 게임을 만들 수 있다.",
-    steps:["‘흔들었을 때’ 블록 가져오기","변수에 randint(0, 2) 저장","if / else if / else로 값에 따라 분기","각 경우마다 R, P, S 문자 출력"],
+    steps:["‘흔들었을 때’ 블록 가져오기","‘흔들었을 때’ 블록 안에 ‘변수 설정’ 블록을 넣고 ‘무작위 수’ 블록으로 0~2 범위의 수 저장하기","‘if / else if / else’ 블록 넣기","값이 0, 1, 2일 때 각각 ‘문자열 출력’ 블록을 넣고 R, P, S 출력하기"],
     checks:[
       {label:"흔들기 이벤트 사용", re:/Gesture\.Shake/},
       {label:"무작위 수 0~2", re:/randint\(\s*0\s*,\s*2\s*\)/},
@@ -524,7 +522,7 @@ const QUESTIONS = [
     desc:"문구 3개 이상을 리스트(배열)에 담고, A 버튼을 누를 때마다 다음 문구를 순서대로 보여주세요.",
     std:"[9정03-05] 데이터를 순차적으로 저장할 수 있는 구조를 활용하여 문제 해결 프로그램을 작성한다.",
     exp:"배열과 인덱스 변수를 만들고 값을 순서대로 꺼내 쓸 수 있다.",
-    steps:["문자열 배열 만들기","인덱스 변수를 0으로 시작","A 버튼: 배열[인덱스] 출력","인덱스를 1 증가, 끝에 도달하면 0으로 되돌리기"],
+    steps:["‘변수 만들기’ 블록으로 문구 배열 변수와 인덱스 변수 만들기","‘시작하면’ 블록 안에 ‘변수 설정’ 블록을 넣고 문구 3개 이상을 배열에 저장하기","‘시작하면’ 블록 안에 ‘변수 설정’ 블록을 넣고 인덱스를 0으로 설정하기","‘A 버튼을 눌렀을 때’ 블록 안에 ‘문자열 출력’ 블록을 넣고 배열의 인덱스 번째 값 출력하기","‘변수 증가’ 블록으로 인덱스를 1 증가시키고, 끝에 도달하면 0으로 설정하기"],
     checks:[
       {label:"배열(리스트) 만들기", re:/\[\s*["'][^\]]*["']\s*,\s*["'][^\]]*["']\s*,\s*["'][^\]]*["']\s*\]/},
       {label:"배열 값 꺼내기 [인덱스]", re:/\w+\s*\[\s*\w+\s*\]/},
@@ -536,7 +534,7 @@ const QUESTIONS = [
     desc:"A 버튼을 누르면 for 반복문으로 맨 윗줄 LED 5개를 왼쪽부터 차례로 켜세요.",
     std:"[9정03-04] 사례를 중심으로 문제 해결에 적합한 전략을 선택하여 알고리즘을 설계한다.",
     exp:"for 반복문과 반복 변수를 좌표로 활용할 수 있다.",
-    steps:["‘A 버튼을 눌렀을 때’ 블록 가져오기","‘for 인덱스 0부터 4까지’ 블록 가져오기","led.plot(인덱스, 0) 넣기","일시중지로 차례대로 보이게 하기"],
+    steps:["‘A 버튼을 눌렀을 때’ 블록 가져오기","‘for 인덱스 0부터 4까지’ 블록 넣기","‘LED 켜기(plot)’ 블록을 넣고 x 좌표에 인덱스, y 좌표에 0 넣기","‘일시중지’ 블록을 넣어 차례대로 보이게 하기"],
     checks:[
       {label:"A 버튼 이벤트", re:/Button\.A\b/},
       {label:"for 반복문 사용", re:/for\s*\(\s*let\s+\w+\s*=\s*0\s*;\s*\w+\s*<=?\s*\d+\s*;/},
@@ -548,7 +546,7 @@ const QUESTIONS = [
     desc:"B 버튼을 누르면 5×5 LED 전체를 반복문 두 개(중첩)로 모두 켜세요.",
     std:"[9정03-06] 논리 연산과 중첩 제어 구조를 활용하여 문제를 해결하는 프로그램을 작성한다.",
     exp:"중첩 반복문으로 2차원 좌표를 다룰 수 있다.",
-    steps:["‘B 버튼을 눌렀을 때’ 블록 가져오기","바깥 for: x를 0~4","안쪽 for: y를 0~4","led.plot(x, y) 넣기"],
+    steps:["‘B 버튼을 눌렀을 때’ 블록 가져오기","‘for 인덱스 0부터 4까지’ 블록을 넣고 변수를 x로 바꾸기","그 안에 ‘for 인덱스 0부터 4까지’ 블록을 하나 더 넣고 변수를 y로 바꾸기","안쪽 ‘for 인덱스 0부터 4까지’ 블록 안에 ‘LED 켜기(plot)’ 블록을 넣고 좌표에 x, y 넣기"],
     checks:[
       {label:"B 버튼 이벤트", re:/Button\.B\b/},
       {label:"for 반복문 2개 이상(중첩)", test:c=>(c.match(/for\s*\(\s*let\s/g)||[]).length>=2},
@@ -558,7 +556,7 @@ const QUESTIONS = [
     desc:"좌우로 기울이면 가속도 값(X)에 따라 LED 점이 가운데 줄에서 좌우로 움직이게 하세요.",
     std:"[9정02-04] 사례를 중심으로 데이터 간의 관계를 파악하고, 데이터에 기반하여 의미를 해석한다.",
     exp:"센서 값을 변환(map)하고 범위를 제한해 출력에 연결할 수 있다.",
-    steps:["‘무한반복’ 안에서 시작","가속도 X 값을 변수에 저장","Math.map 으로 -1023~1023 → 0~4 변환","Math.constrain 으로 범위 제한","led.plot 으로 점 표시 (이전 화면은 지우기)"],
+    steps:["‘무한반복’ 블록 가져오기","‘무한반복’ 블록 안에 ‘변수 설정’ 블록을 넣고 ‘가속도 X’ 블록 값 저장하기","‘값 변환(map)’ 블록으로 -1023~1023을 0~4로 변환하기","‘범위 제한(constrain)’ 블록으로 0~4 범위로 제한하기","‘화면 지우기’ 블록으로 이전 화면 지우기","‘LED 켜기(plot)’ 블록으로 점 표시하기"],
     checks:[
       {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
       {label:"가속도 X 값 읽기", re:/input\.acceleration\(\s*Dimension\.X\s*\)/},
@@ -571,7 +569,7 @@ const QUESTIONS = [
     desc:"빛 세기가 50보다 작고(어둡고) 온도가 20보다 높으면 LED 전체를 켜고, 그렇지 않으면 끄세요. (논리 연산자 사용)",
     std:"[9정03-06] 논리 연산과 중첩 제어 구조를 활용하여 문제를 해결하는 프로그램을 작성한다.",
     exp:"논리 연산자로 여러 조건을 결합해 판단할 수 있다.",
-    steps:["‘무한반복’ 안에 if / else 넣기","빛 세기 < 50 조건 만들기","온도 > 20 조건 만들기","두 조건을 ‘그리고(&&)’로 연결","참이면 전체 켜기, 아니면 지우기"],
+    steps:["‘무한반복’ 블록 가져오기","‘무한반복’ 블록 안에 ‘if / else’ 블록 넣기","‘빛 세기’ 블록으로 ‘빛 세기 < 50’ 조건 만들기","‘온도’ 블록으로 ‘온도 > 20’ 조건 만들기","‘그리고’ 블록으로 두 조건 연결하기","참일 때 LED 전체를 켜는 블록 넣고, 거짓일 때 ‘화면 지우기’ 블록 넣기"],
     checks:[
       {label:"무한 반복 사용", re:/basic\.forever\(|while\s*\(\s*true\s*\)/},
       {label:"빛 세기 센서 사용", re:/input\.lightLevel\(\)/},
@@ -584,7 +582,7 @@ const QUESTIONS = [
     desc:"같은 그룹으로 라디오를 설정하고, A 버튼을 누르면 숫자를 보내고, 숫자를 받으면 그 값을 화면에 보여주세요.",
     std:"[9정01-03] 문제 해결 목적에 맞는 피지컬 컴퓨팅 구성요소를 선택하여 시스템을 구상한다.",
     exp:"무선 통신으로 두 기기가 데이터를 주고받는 구조를 구현할 수 있다.",
-    steps:["시작하면 라디오 그룹 설정","A 버튼: 숫자 보내기","‘라디오로 숫자를 받았을 때’ 블록 가져오기","받은 숫자를 화면에 출력"],
+    steps:["‘시작하면’ 블록 안에 ‘라디오 그룹 설정’ 블록 넣기","‘A 버튼을 눌렀을 때’ 블록 가져오기","‘A 버튼을 눌렀을 때’ 블록 안에 ‘라디오 숫자 보내기’ 블록 넣기","‘라디오로 숫자를 받았을 때’ 블록 가져오기","‘라디오로 숫자를 받았을 때’ 블록 안에 ‘숫자 출력’ 블록을 넣고 받은 숫자 출력하기"],
     checks:[
       {label:"라디오 그룹 설정", re:/radio\.setGroup\(\s*\d+\s*\)/},
       {label:"A 버튼 이벤트", re:/Button\.A\b/},
@@ -596,7 +594,7 @@ const QUESTIONS = [
     desc:"A 버튼을 누르면 무작위 시간(1~3초) 뒤에 LED가 켜지고, 켜진 뒤 B 버튼을 누르기까지 걸린 시간(ms)을 보여주세요. 시작 함수를 만들어 사용하세요.",
     std:"[9정03-08] 실생활의 문제를 탐색하여 발견하고, 프로그래밍을 통해 해결한다.",
     exp:"변수·함수·무작위·시간·이벤트를 종합해 완성도 있는 프로그램을 만들 수 있다.",
-    steps:["‘시작’ 함수 만들기(무작위 대기 → 점 켜기 → 시작 시각 저장)","A 버튼에서 시작 함수 호출","B 버튼에서 (현재 시각 - 시작 시각) 계산","결과 숫자 출력"],
+    steps:["‘함수 만들기’ 블록으로 ‘시작’ 함수 만들기","‘시작’ 함수 안에 ‘무작위 수’ 블록으로 정한 시간만큼 ‘일시중지’ 블록 넣기","‘시작’ 함수 안에 ‘LED 켜기(plot)’ 블록을 넣고, ‘시간 측정(runningTime)’ 블록 값을 변수에 저장하기","‘A 버튼을 눌렀을 때’ 블록 안에 ‘시작’ 블록 넣기","‘B 버튼을 눌렀을 때’ 블록 안에서 현재 시간에서 저장한 시간을 빼 계산하기","‘숫자 출력’ 블록으로 결과 출력하기"],
     checks:[
       {label:"함수 정의", re:/function\s+\w+\s*\(/},
       {label:"무작위 대기 시간", re:/randint\(/},
@@ -625,12 +623,6 @@ window.addEventListener("message",ev=>{
   const d=ev.data; if(!d||typeof d!=="object") return;
   let host=""; try{ host=new URL(ev.origin).hostname; }catch(e){ return; }
   if(!/makecode\.microbit\.org$/.test(host)) return;
-  if(d.type==="pxteditor"&&clearId&&d.id===clearId){   // 블록 지우기 요청에 대한 편집기의 응답
-    clearTimeout(clearTimer); clearId=null;
-    if(d.success===false) setClearMsg("블록을 지우지 못했어요. ‘편집기 새로고침’ 후 다시 시도해 주세요.","bad");
-    else setClearMsg("✔ 블록을 모두 지웠어요. 새로 시작하세요!","ok");
-    return;
-  }
   if(d.type==="pxthost"){
     if(!connected){connected=true;$("status").textContent="MakeCode 연결됨";$("status").classList.add("on");}
     if(d.action==="workspacesync"||d.action==="workspacesave"){
@@ -748,33 +740,6 @@ $("btnSubmit").onclick=()=>{
   s.tries++; s.code=code; s.last={pass:res.pass,items:res.items,at:Date.now()};
   if(res.pass&&!s.done){s.done=true;s.first=s.tries;}
   save(); renderAll();
-};
-/* 블록 모두 지우기: MakeCode 편집기에 빈 프로젝트를 불러와 블록을 새로 시작해요. (채점 기록·초록 동그라미는 유지) */
-let clearId=null, clearTimer=null;
-function setClearMsg(text,kind){
-  const m=$("clearMsg"); m.textContent=text;
-  m.style.color=kind==="ok"?"var(--ok)":kind==="bad"?"var(--bad)":"var(--sub)";
-}
-$("btnClearBlocks").onclick=()=>{
-  if(!confirm("편집기의 블록을 모두 지우고 새로 시작할까요?\n(지운 블록은 되돌릴 수 없어요. 채점 기록은 그대로 남아요.)"))return;
-  // 편집기에서 읽어 둔 이전 코드도 비워야 지운 뒤에 이전 코드로 채점되지 않아요.
-  editorCode=""; qs(QUESTIONS[state.cur].id).code=""; save();
-  const emptyProject={text:{
-    "main.blocks":'<xml xmlns="http://www.w3.org/1999/xhtml"></xml>',
-    "main.ts":"",
-    "README.md":"",
-    "pxt.json":JSON.stringify({name:"실습",description:"",dependencies:{core:"*",radio:"*"},files:["main.blocks","main.ts","README.md"]})
-  }};
-  clearId="clear"+Date.now();
-  clearTimeout(clearTimer);
-  try{
-    $("editor").contentWindow.postMessage({type:"pxteditor",action:"importproject",id:clearId,project:emptyProject},"https://makecode.microbit.org");
-  }catch(err){ console.error("블록 지우기 오류:",err); }
-  setClearMsg("블록을 지우는 중이에요...");
-  clearTimer=setTimeout(()=>{
-    clearId=null;
-    setClearMsg("편집기에서 응답이 없어요. 블록이 그대로라면 ‘편집기 새로고침’을 누른 뒤 MakeCode 화면에서 새 프로젝트를 만들어 주세요.","bad");
-  },4000);
 };
 $("btnPrev").onclick=()=>{if(state.cur>0){state.cur--;save();renderAll();}};
 $("btnNext").onclick=()=>{if(state.cur<QUESTIONS.length-1){state.cur++;save();renderAll();}};
