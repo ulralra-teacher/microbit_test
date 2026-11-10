@@ -1,7 +1,8 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-10T04:39:11.125Z",
+  "updatedAt": "2026-11-10T04:59:00.752Z",
   "config": {
+    "title": "micro:bit 기본 동작 실습",
     "submitUrl": "https://script.google.com/macros/s/AKfycbxvOnc2QK77plSmfF6ghY8jNiVpHKMx_Sq1vdV1QXf89G53U73bczKAevz-beed4_KmUg/exec"
   },
   "missions": {
